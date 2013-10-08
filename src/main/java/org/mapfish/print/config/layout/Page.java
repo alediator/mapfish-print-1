@@ -70,6 +70,7 @@ public class Page {
             for (int i = 0; i < items.size(); i++) {
                 Block block = items.get(i);
                 if (block.isVisible(context, params)) {
+                	// FIXME: I think the mapblock it's render here, before read 'maps' spec
                     block.render(params, new Block.PdfElement() {
                         @Override
                         public void add(Element element) throws DocumentException {

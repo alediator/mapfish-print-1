@@ -61,6 +61,7 @@ public class MapBlock extends Block {
         if (isAbsolute()) {
             final float absX = getAbsoluteX(context, params);
             final float absY = getAbsoluteY(context, params);
+            // FIXME: the absoluteX and absoluteY it's read from the config.yaml and has the same value for all maps
             context.getCustomBlocks().addAbsoluteDrawer(new PDFCustomBlocks.AbsoluteDrawer() {
                 public void render(PdfContentByte dc) {
                     final Rectangle rectangle = new Rectangle(absX, absY - transformer.getPaperH(),
