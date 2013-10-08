@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.mapfish.print.ChunkDrawer;
 import org.mapfish.print.InvalidJsonValueException;
+import org.mapfish.print.JsonMissingException;
 import org.mapfish.print.PDFCustomBlocks;
 import org.mapfish.print.RenderingContext;
 import org.mapfish.print.Transformer;
@@ -70,9 +71,15 @@ public class MapChunkDrawer extends ChunkDrawer {
     public void renderImpl(Rectangle rectangle, PdfContentByte dc) {
 
         final PJsonObject parent = context.getGlobalParams();
-        if(parent.has("maps")){
+        PJsonArray maps = null;
+        try{
+            maps = parent.getJSONArray("maps");
+        }catch(JsonMissingException jme){
+        	// nothing. we execute the default render
+        	maps = null;
+        }
+        if(maps != null){
         	// TODO: we need be able to render more than one map before!!
-            PJsonArray maps = parent.getJSONArray("maps");
         	for (int i = 0; i < maps.size(); ++i) {
                 PJsonObject map = maps.getJSONObject(i);
                 renderMap(rectangle, dc, map);
