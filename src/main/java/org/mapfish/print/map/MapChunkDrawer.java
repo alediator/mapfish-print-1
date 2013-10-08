@@ -68,9 +68,29 @@ public class MapChunkDrawer extends ChunkDrawer {
     }
 
     public void renderImpl(Rectangle rectangle, PdfContentByte dc) {
+
         final PJsonObject parent = context.getGlobalParams();
-        PJsonArray layers = parent.getJSONArray("layers");
-        String srs = parent.getString("srs");
+        if(parent.has("maps")){
+        	// TODO: we need be able to render more than one map before!!
+            PJsonArray maps = parent.getJSONArray("maps");
+        	for (int i = 0; i < maps.size(); ++i) {
+                PJsonObject map = maps.getJSONObject(i);
+                renderMap(rectangle, dc, map);
+        	}
+        }else{
+            renderMap(rectangle, dc, parent);
+        }
+    }
+
+    /**
+     * Render a map for the context.
+     * @param rectangle
+     * @param dc
+     * @param parent
+     */
+    private void renderMap(Rectangle rectangle, PdfContentByte dc, PJsonObject map) {
+        PJsonArray layers = map.getJSONArray("layers");
+        String srs = map.getString("srs");
 
         if (!context.getConfig().isDisableScaleLocking() && !context.getConfig().isScalePresent(transformer.getScale())) {
             throw new InvalidJsonValueException(params, "scale", transformer.getScale());
@@ -83,7 +103,7 @@ public class MapChunkDrawer extends ChunkDrawer {
             transformer.zoom(mainTransformer, (float) (1.0 / overviewMap));
             transformer.setRotation(0);   //overview always north up!
             context.setStyleFactor((float) (transformer.getPaperW() / mainTransformer.getPaperW() / overviewMap));
-            layers = parent.optJSONArray("overviewLayers", layers);
+            layers = map.optJSONArray("overviewLayers", layers);
         }
 
         transformer.setMapPos(rectangle.getLeft(), rectangle.getBottom());
