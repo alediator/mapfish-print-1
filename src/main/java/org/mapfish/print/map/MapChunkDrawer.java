@@ -71,25 +71,27 @@ public class MapChunkDrawer extends ChunkDrawer {
     public void renderImpl(Rectangle rectangle, PdfContentByte dc) {
 
         final PJsonObject parent = context.getGlobalParams();
-        PJsonArray maps = null;
+        PJsonObject maps = null;
         try{
-            maps = parent.getJSONArray("maps");
+            maps = parent.getJSONObject("maps");
         }catch(JsonMissingException jme){
         	// nothing. we execute the default render
         	maps = null;
         }
-        if(maps != null){
-        	// TODO: we need be able to render more than one map before!!
-        	for (int i = 0; i < maps.size(); ++i) {
-                PJsonObject map = maps.getJSONObject(i);
-                /*
-                 *  FIXME: We need to modify rectangle because now it's 
-                 *  the same for all maps and it's rendered overlapping it. 
-                 *   
-                 *  @see Page#render(PJsonObject, RenderingContext)
-                 */
-                renderMap(rectangle, dc, map);
-        	}
+        if(maps != null && maps.has(name)) {
+        	PJsonObject map = maps.getJSONObject(name);
+            renderMap(rectangle, dc, map);
+//        	// TODO: we need be able to render more than one map before!!
+//        	for (int i = 0; i < maps.size(); ++i) {
+//                PJsonObject map = maps.getJSONObject(i);
+//                /*
+//                 *  FIXME: We need to modify rectangle because now it's 
+//                 *  the same for all maps and it's rendered overlapping it. 
+//                 *   
+//                 *  @see Page#render(PJsonObject, RenderingContext)
+//                 */
+//                renderMap(rectangle, dc, map);
+//        	}
         }else{
             renderMap(rectangle, dc, parent);
         }
