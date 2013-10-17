@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 import org.mapfish.print.InvalidValueException;
@@ -72,6 +74,9 @@ public class LegendsBlock extends Block {
     private float iconMaxWidth = Float.MAX_VALUE; // MAX_VALUE/0 means disable
     private float iconMaxHeight = 8; // 0 means disable
     private float iconPadding[] = {0f,0f,0f,0f};
+
+    // Max size for each icon
+    private int maxSymbolSize = Integer.MAX_VALUE; // MAX_VALUE/0 means disable
 
     private float textMaxWidth = Float.MAX_VALUE;
     //private float textMaxHeight = Float.MAX_VALUE; // UNUSED for now!
@@ -320,8 +325,8 @@ public class LegendsBlock extends Block {
          * Create a chunk from an image (svg, png, ...)
          * @param context PDF rendering context
          * @param iconItem URL of the image
-         * @param iconMaxWidth width of the chunk
-         * @param iconMaxHeight height of the chunk
+         * @param maxIconWidth width of the chunk
+         * @param maxIconHeight height of the chunk
          * @return Chunk with image in it
          * @throws DocumentException
          */
@@ -332,20 +337,89 @@ public class LegendsBlock extends Block {
                 float scale) throws DocumentException {
             Chunk iconChunk = null;
             try {
+            	//we're going to change icon width and height.
+                iconItem = setIconSize(iconItem, maxSymbolSize);
                 if (iconItem.indexOf("image%2Fsvg%2Bxml") != -1) { // TODO: make this cleaner
                     iconChunk = PDFUtils.createImageChunkFromSVG(
                             context, iconItem,
                             maxIconWidth, maxIconHeight, scale);
                 } else {
                     iconChunk = PDFUtils.createImageChunk(context,
-                            maxIconWidth, maxIconHeight, scale,
+                    		maxIconWidth, maxIconHeight, scale,
                             URI.create(iconItem), 0f);
                 }
             } catch (IOException e) {
                 throw new DocumentException(e);
             }
             return iconChunk;
-        }               
+        }
+        
+        private String widthStringPattern = "&width=[0-9]+";
+        private Pattern widthPatern = Pattern.compile(widthStringPattern);
+        
+        private String heightStringPattern = "&height=[0-9]+";
+        private Pattern heightPatern = Pattern.compile(heightStringPattern);
+        
+        private String symbolSizeStringPattern = "minSymbolSize%3A[0-9]+";
+        private Pattern symbolSizePattern = Pattern.compile(symbolSizeStringPattern);
+        
+        /**
+         * Replace the url with the correct icon width and height. 
+    	 * Maybe like this: '&width=${maxIconWidth}&height=${maxIconHeight}'
+         * 
+         * @param iconItem
+         * @param maxIconWidth replacement for the width
+         * @param maxIconHeight replacement for the height
+         * 
+         * @return iconUrl with the correct width and height
+         */
+        private String setIconSize(
+                String iconUrl,
+                int maxSymbolSize){
+        	String replaced = iconUrl;
+            try {
+            	// width
+                Matcher widthMatcher = widthPatern.matcher(replaced);
+                String widthParameter = "&width=" + maxSymbolSize;
+            	if(widthMatcher.find()){
+            		String  matched = widthMatcher.group();
+            		int actualValue = Integer.decode(matched.replace("&width=", ""));
+            		if(actualValue > maxSymbolSize){
+            			replaced = widthMatcher.replaceFirst(widthParameter);
+            		}
+            	}else{
+            		replaced += widthParameter;
+            	}
+            	// height
+                Matcher heightMatcher = heightPatern.matcher(replaced);
+                String heightParameter = "&height=" + maxSymbolSize;
+            	if(heightMatcher.find()){
+            		String  matched = heightMatcher.group();
+            		int actualValue = Integer.decode(matched.replace("&height=", ""));
+            		if(actualValue > maxSymbolSize){
+            			replaced = heightMatcher.replaceFirst(heightParameter);
+            		}
+            	}else{
+            		replaced += heightParameter;
+            	}
+            	// symbol size
+                Matcher symbolSizeMatcher = symbolSizePattern.matcher(replaced);
+                String symbolSizeParameter = "minSymbolSize%3A" + maxSymbolSize;
+            	if(symbolSizeMatcher.find()){
+            		String  matched = symbolSizeMatcher.group();
+            		int actualValue = Integer.decode(matched.replace("minSymbolSize%3A", ""));
+            		if(actualValue > maxSymbolSize){
+            			replaced = symbolSizeMatcher.replaceFirst(symbolSizeParameter);
+            		}
+            	}
+            } catch (Exception e) {
+                // we return the origin string
+            	return iconUrl;
+            }
+            return replaced;
+        }
+        
+        
 
         /**
          * creates a "real" PDF document to draw on to be able to calculate
@@ -956,4 +1030,13 @@ public class LegendsBlock extends Block {
         }
         this.layerSpaceBefore = (float) layerSpaceBefore;
     }
+
+    /**
+     * Max size for each icon
+     * 
+     * @param maxSymbolSize
+     */
+	public void setMaxSymbolSize(int maxSymbolSize) {
+		this.maxSymbolSize = maxSymbolSize;
+	}
 }
